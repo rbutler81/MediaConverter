@@ -1,6 +1,9 @@
 package converter;
 
 import configFileUtil.Config;
+import logger.ConfigException;
+import logger.Log;
+import logger.LogConfig;
 
 import java.io.*;
 import java.nio.file.Paths;
@@ -14,7 +17,7 @@ public class Main {
     // setup static variables ///////////////////////////////////////////////////////////////////
     static final String PATH = Paths.get(".").toAbsolutePath().normalize().toString() + "\\";
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws IOException, InterruptedException, ConfigException {
 
         // check for config file + external executables
         final String CONFIG_FILE = PATH + args[0];
@@ -39,6 +42,17 @@ public class Main {
         final String PRESETS_FILE = CONFIG_PARAMS.getSingleParamAsString("PresetsFile");
         final String PRESET_NAME = CONFIG_PARAMS.getSingleParamAsString("PresetName");
         final Integer SCAN_INTERVAL_TIME_MIN = CONFIG_PARAMS.getSingleParamAsInt("ScanInterval_Minutes");
+
+        // create logger
+        LogConfig logConfig = new LogConfig(20000000, 5);
+        Log logger = new Log(logConfig, PATH, "hevc_converter.log", "");
+
+        // create synchronized message queue (thread safe)
+        Message msg = new Message();
+
+        Thread udp = new Thread(new FolderWatcher(MEDIA_FOLDER.get(0), msg, logger), "UDP Server");
+        udp.start();
+        Thread.sleep(999999999);
 
        while (true) {
 
