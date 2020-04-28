@@ -50,8 +50,11 @@ public class Main {
         // create synchronized message queue (thread safe)
         Message msg = new Message();
 
-        Thread udp = new Thread(new FolderWatcher(MEDIA_FOLDER.get(0), msg, logger), "UDP Server");
-        udp.start();
+        FolderEvent fe = new FolderEvent("c:\\test\\maybe\\testme\\");
+        fe.sendTo("192.168.1.1", 6000);
+
+        Thread folderWatcher = new Thread(new FolderWatcher(MEDIA_FOLDER.get(0), msg, logger), "Folder Watcher");
+        folderWatcher.start();
         Thread.sleep(999999999);
 
        while (true) {

@@ -1,6 +1,8 @@
 package converter;
 
-public class TimeInMillis {
+import java.io.Serializable;
+
+public class TimeInMillis implements Serializable {
 
     private long time;
 
