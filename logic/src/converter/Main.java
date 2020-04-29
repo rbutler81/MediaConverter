@@ -52,14 +52,13 @@ public class Main {
         Message msg = new Message();
 
         // create and launch udp server
-        RecvObjectUdp<FolderEvent> folderEventReceiver = new RecvObjectUdp<FolderEvent>(FolderEvent.class);
         UDPServer udpListener = new UDPServer(6000, msg);
         Thread udpServer = new Thread(udpListener, "UDP Server");
         udpServer.start();
-        // Thread.sleep(5000);
+        Thread.sleep(5000);
 
         FolderEvent fe = new FolderEvent("c:\\test\\maybe\\testme\\");
-        fe.sendTo("192.168.1.20", 6000);
+        fe.sendTo("localhost", 6000);
         Thread.sleep(999999999);
 
         Thread folderWatcher = new Thread(new FolderWatcher(MEDIA_FOLDER.get(0), msg, logger), "Folder Watcher");
