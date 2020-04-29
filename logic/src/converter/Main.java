@@ -4,6 +4,7 @@ import configFileUtil.Config;
 import logger.ConfigException;
 import logger.Log;
 import logger.LogConfig;
+import udp.RecvObjectUdp;
 
 import java.io.*;
 import java.nio.file.Paths;
@@ -50,12 +51,20 @@ public class Main {
         // create synchronized message queue (thread safe)
         Message msg = new Message();
 
+        // create and launch udp server
+        RecvObjectUdp<FolderEvent> folderEventReceiver = new RecvObjectUdp<FolderEvent>(FolderEvent.class);
+        UDPServer udpListener = new UDPServer(6000, msg);
+        Thread udpServer = new Thread(udpListener, "UDP Server");
+        udpServer.start();
+        // Thread.sleep(5000);
+
         FolderEvent fe = new FolderEvent("c:\\test\\maybe\\testme\\");
-        fe.sendTo("192.168.1.1", 6000);
+        fe.sendTo("192.168.1.20", 6000);
+        Thread.sleep(999999999);
 
         Thread folderWatcher = new Thread(new FolderWatcher(MEDIA_FOLDER.get(0), msg, logger), "Folder Watcher");
         folderWatcher.start();
-        Thread.sleep(999999999);
+
 
        while (true) {
 

@@ -47,4 +47,7 @@ public class TimeInMillis implements Serializable {
         }
     }
 
+    public long getTime() {
+        return time;
+    }
 }
