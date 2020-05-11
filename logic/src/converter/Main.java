@@ -1,10 +1,10 @@
 package converter;
 
 import configFileUtil.Config;
-import logger.ConfigException;
-import logger.Log;
-import logger.LogConfig;
-import udp.RecvObjectUdp;
+import logger.*;
+import threads.Message;
+import udp.heartbeat.HeartBeatStatus;
+import udp.heartbeat.HeartBeatWorkerThread;
 
 import java.io.*;
 import java.nio.file.Paths;
@@ -46,23 +46,32 @@ public class Main {
 
         // create logger
         LogConfig logConfig = new LogConfig(20000000, 5);
-        Log logger = new Log(logConfig, PATH, "hevc_converter.log", "");
+        LoggerBase logBase = new LoggerBase(logConfig, PATH, "hevc_converter.log", "");
+        LoggerInstance log = new LoggerInstance(logBase, "MainLoop");
 
         // create synchronized message queue (thread safe)
-        Message msg = new Message();
+        Message<FolderEvent> msgFolderEvent = new Message<>();
 
-        // create and launch udp server
-        UDPServer udpListener = new UDPServer(6000, msg);
-        Thread udpServer = new Thread(udpListener, "UDP Server");
-        udpServer.start();
-        Thread.sleep(5000);
+        // create and launch heartbeat thread
+        HeartBeatWorkerThread hbwt = new HeartBeatWorkerThread("localhost", 6666, 5000, logBase);
+        hbwt.getLog().setInstanceName("HeartBeatThread");
+        Thread t = new Thread(hbwt);
+        t.start();
 
-        FolderEvent fe = new FolderEvent("c:\\test\\maybe\\testme\\");
-        fe.sendTo("localhost", 6000);
-        Thread.sleep(999999999);
+        boolean i = true;
+        int j = 0;
+            while (i) {
 
-        Thread folderWatcher = new Thread(new FolderWatcher(MEDIA_FOLDER.get(0), msg, logger), "Folder Watcher");
-        folderWatcher.start();
+                hbwt.getHeartBeatStatusMsg().waitUntilNotifiedOrListNotEmpty();
+                HeartBeatStatus hbs = hbwt.getHeartBeatStatusMsg().getNextMsg();
+                log.logAndPrint(hbs.toString());
+
+            }
+
+
+
+       /* Thread folderWatcher = new Thread(new FolderWatcher(MEDIA_FOLDER.get(0), msgFolderEvent), "Folder Watcher");
+        folderWatcher.start();*/
 
 
        while (true) {

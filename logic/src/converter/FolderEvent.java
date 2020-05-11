@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 public class FolderEvent extends SendUdp implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 4714006100374071177L;
 
     TimeInMillis time;
     String path;
@@ -14,10 +14,6 @@ public class FolderEvent extends SendUdp implements Serializable {
     FolderEvent(String s) {
         this.time = new TimeInMillis();
         this.path = s;
-    }
-
-    public boolean sendTo(String addr, int port) {
-        return super.sendObjectTo(addr, port, this);
     }
 
     public TimeInMillis getTime() {

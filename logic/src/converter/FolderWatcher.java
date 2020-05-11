@@ -1,6 +1,6 @@
 package converter;
 
-import logger.Log;
+import threads.Message;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -9,15 +9,14 @@ import static java.nio.file.StandardWatchEventKinds.*;
 
 public class FolderWatcher implements Runnable {
 
-    private Message msg;
+    private Message<FolderEvent> msg;
     private WatchService watcher;
-    private Log logger;
     private Path folderPath;
     private WatchKey key;
 
-    public FolderWatcher(String folderPath, Message msg, Log logger) {
+    public FolderWatcher(String folderPath, Message<FolderEvent> msg) {
+
         this.msg = msg;
-        this.logger = logger;
         this.folderPath = Paths.get(folderPath);
         try {
             this.watcher = FileSystems.getDefault().newWatchService();
@@ -37,7 +36,7 @@ public class FolderWatcher implements Runnable {
                         ENTRY_DELETE,
                         ENTRY_MODIFY);
             } catch (IOException x) {
-                logger.appendLine("FolderWatcher{" + x + "}");
+
             }
 
             while (true) {
@@ -45,7 +44,7 @@ public class FolderWatcher implements Runnable {
                 try {
                     key = watcher.take();
                 } catch (InterruptedException x)  {
-                    logger.appendLine("FolderWatcher{" + x + "}");
+
                 }
 
                 for (WatchEvent<?> event : key.pollEvents()) {
@@ -54,8 +53,6 @@ public class FolderWatcher implements Runnable {
                     WatchEvent<Path> ev = (WatchEvent<Path>)event;
                     Path filename = ev.context();
                     String test = filename.toString();
-                    System.out.println();
-
                 }
 
             }
