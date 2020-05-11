@@ -6,6 +6,7 @@
       <module fileurl="file://$PROJECT_DIR$/../Helpers/ConfigFileReader/ConfigFileReader.iml" filepath="$PROJECT_DIR$/../Helpers/ConfigFileReader/ConfigFileReader.iml" />
       <module fileurl="file://$PROJECT_DIR$/../Helpers/Logger/Logger.iml" filepath="$PROJECT_DIR$/../Helpers/Logger/Logger.iml" />
       <module fileurl="file://$PROJECT_DIR$/MediaConverter.iml" filepath="$PROJECT_DIR$/MediaConverter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Helpers/Misc/Misc.iml" filepath="$PROJECT_DIR$/../Helpers/Misc/Misc.iml" />
       <module fileurl="file://$PROJECT_DIR$/logic/logic.iml" filepath="$PROJECT_DIR$/logic/logic.iml" />
     </modules>
   </component>
