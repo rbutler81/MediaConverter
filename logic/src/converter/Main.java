@@ -9,10 +9,7 @@ import udp.heartbeat.HeartBeatWorkerThread;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Main {
 
@@ -68,6 +65,7 @@ public class Main {
                     if (persistedData.containsKey(s)) {
                         if (!persistedData.get(s).isHevc() || (persistedData.get(s).getFileSize() != Files.size(Paths.get(s)))) {
                             filesToScan.add(s);
+                            persistedData.remove(s);
                         }
                     } else {
                         filesToScan.add(s);
@@ -76,9 +74,24 @@ public class Main {
 
                 List<VideoFile> vidFiles = scanVideoFiles(filesToScan, folder, OUTPUT_FOLDER, FILE_TYPES, unknownFilesTypes);
 
-                // add files to the map, check file size again? serialize
+                for (VideoFile vf: vidFiles) {
+                    persistedData.put(vf.getPath(), vf);
+                }
+
+                saveDataFile(dataFile, persistedData);
 
                 encode(vidFiles, hbPath, PRESETS_FILE, PRESET_NAME);
+
+                Set<String> keys = persistedData.keySet();
+                for (String s : keys) {
+                    if (!Files.exists(Paths.get(s))) {
+                        persistedData.remove(s);
+                    }
+
+                }
+
+                saveDataFile(dataFile, persistedData);
+
 
             }
             if (SCAN_INTERVAL_TIME_MIN == 0) break;
@@ -186,7 +199,7 @@ public class Main {
 
     public static HashMap<String, VideoFile> readDataFile(File f) {
 
-        VideoFileMap videoFileMap = null;
+        HashMap<String, VideoFile> videoFileMap = null;
 
         // Reading the object from a file
         try {
@@ -194,10 +207,12 @@ public class Main {
             ObjectInputStream in = new ObjectInputStream(file);
 
             // Method for deserialization of object
-            videoFileMap = (VideoFileMap) in.readObject();
+            videoFileMap = (HashMap) in.readObject();
 
             in.close();
             file.close();
+
+
 
 
         } catch (FileNotFoundException e) {
@@ -209,7 +224,7 @@ public class Main {
         }
 
         if (videoFileMap != null) {
-            return videoFileMap.getDictionary();
+            return videoFileMap;
         } else {
             return new HashMap<String, VideoFile>();
         }
