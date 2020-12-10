@@ -7,6 +7,7 @@ import udp.heartbeat.HeartBeatStatus;
 import udp.heartbeat.HeartBeatWorkerThread;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,9 +23,12 @@ public class Main {
 
         // check for config file + external executables
         final String CONFIG_FILE = PATH + args[0];
+        File dataFile = new File(PATH + "data.ser");
         File iniFile = new File(CONFIG_FILE);
         File ffProbe = new File(PATH + "ffprobe.exe");
         File hbPath = new File(PATH + "HandBrakeCLI.exe");
+        HashMap<String, VideoFile> persistedData = null;
+
         if (!hbPath.exists()) {
             throw new FileNotFoundException("HandBreakCLI.exe missing - place in same folder as JAR file");
         }
@@ -33,6 +37,11 @@ public class Main {
         }
         if (!iniFile.exists()) {
             throw new FileNotFoundException("Config file: " + CONFIG_FILE);
+        }
+        if (dataFile.exists()) {
+            persistedData = readDataFile(dataFile);
+        } else {
+            persistedData = new HashMap<>();
         }
 
         // read config file
@@ -44,44 +53,33 @@ public class Main {
         final String PRESET_NAME = CONFIG_PARAMS.getSingleParamAsString("PresetName");
         final Integer SCAN_INTERVAL_TIME_MIN = CONFIG_PARAMS.getSingleParamAsInt("ScanInterval_Minutes");
 
-        // create logger
-        LogConfig logConfig = new LogConfig(20000000, 5);
-        LoggerBase logBase = new LoggerBase(logConfig, PATH, "hevc_converter.log", "");
-        LoggerInstance log = new LoggerInstance(logBase, "MainLoop");
-
-        // create synchronized message queue (thread safe)
-        Message<FolderEvent> msgFolderEvent = new Message<>();
-
-        // create and launch heartbeat thread
-        HeartBeatWorkerThread hbwt = new HeartBeatWorkerThread("localhost", 6666, 5000, logBase);
-        hbwt.getLog().setInstanceName("HeartBeatThread");
-        Thread t = new Thread(hbwt);
-        t.start();
-
-        boolean i = true;
-        int j = 0;
-            while (i) {
-
-                hbwt.getHeartBeatStatusMsg().waitUntilNotifiedOrListNotEmpty();
-                HeartBeatStatus hbs = hbwt.getHeartBeatStatusMsg().getNextMsg();
-                log.logAndPrint(hbs.toString());
-
-            }
-
-
-
-       /* Thread folderWatcher = new Thread(new FolderWatcher(MEDIA_FOLDER.get(0), msgFolderEvent), "Folder Watcher");
-        folderWatcher.start();*/
-
 
        while (true) {
 
             List<String> unknownFilesTypes = new ArrayList<>();
 
             for (String folder : MEDIA_FOLDER) {
+
                 List<String> files = walkMediaFiles(folder);
-                List<VideoFile> vidFiles = scanVideoFiles(files, folder, OUTPUT_FOLDER, FILE_TYPES, unknownFilesTypes);
+                List<String> filesToScan = new ArrayList<>();
+
+                for (String s : files) {
+
+                    if (persistedData.containsKey(s)) {
+                        if (!persistedData.get(s).isHevc() || (persistedData.get(s).getFileSize() != Files.size(Paths.get(s)))) {
+                            filesToScan.add(s);
+                        }
+                    } else {
+                        filesToScan.add(s);
+                    }
+                }
+
+                List<VideoFile> vidFiles = scanVideoFiles(filesToScan, folder, OUTPUT_FOLDER, FILE_TYPES, unknownFilesTypes);
+
+                // add files to the map, check file size again? serialize
+
                 encode(vidFiles, hbPath, PRESETS_FILE, PRESET_NAME);
+
             }
             if (SCAN_INTERVAL_TIME_MIN == 0) break;
             clearScreen();
@@ -185,4 +183,59 @@ public class Main {
     public static void clearScreen() throws IOException, InterruptedException {
         new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
     }
+
+    public static HashMap<String, VideoFile> readDataFile(File f) {
+
+        VideoFileMap videoFileMap = null;
+
+        // Reading the object from a file
+        try {
+            FileInputStream file = new FileInputStream(f.toString());
+            ObjectInputStream in = new ObjectInputStream(file);
+
+            // Method for deserialization of object
+            videoFileMap = (VideoFileMap) in.readObject();
+
+            in.close();
+            file.close();
+
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        if (videoFileMap != null) {
+            return videoFileMap.getDictionary();
+        } else {
+            return new HashMap<String, VideoFile>();
+        }
+    }
+
+    private static void saveDataFile(File f, HashMap<String, VideoFile> data) {
+
+        if (f.exists()) {
+            f.delete();
+        }
+
+        //Saving of object in a file
+        FileOutputStream file = null;
+        try {
+            file = new FileOutputStream(f.toString());
+            ObjectOutputStream out = new ObjectOutputStream(file);
+
+            // Method for serialization of object
+            out.writeObject(data);
+
+            out.close();
+            file.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+}
 }

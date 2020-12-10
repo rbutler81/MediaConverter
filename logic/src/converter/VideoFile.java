@@ -1,12 +1,14 @@
 package converter;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-public class VideoFile {
+public class VideoFile implements Serializable {
+
+    private static final long serialversionUID = 129348938L;
 
     private boolean isHevc = false;
     private String path = "";
@@ -17,10 +19,16 @@ public class VideoFile {
     private File inputFile = null;
     private File outputFile = null;
     private boolean encodingDone = false;
+    private long fileSize = 0;
 
     public VideoFile(String path, String inputPath, String outputPath) {
         this.path = path;
         this.inputFile = new File(this.path);
+        try {
+            this.fileSize = Files.size(Paths.get(inputFile.toString()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         List<String> lines = new ArrayList<>();
         try {
@@ -106,6 +114,15 @@ public class VideoFile {
     public boolean isFormatCorrect() {
 
         return !this.format.equals("");
+    }
+
+    public long getFileSize() {
+        return fileSize;
+    }
+
+    public VideoFile setFileSize(long fileSize) {
+        this.fileSize = fileSize;
+        return this;
     }
 
     private void checkLineForVidStream(String line, int x) {
