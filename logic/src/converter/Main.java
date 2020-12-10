@@ -53,15 +53,20 @@ public class Main {
 
        while (true) {
 
+           int numberOfFiles = 0;
+
             List<String> unknownFilesTypes = new ArrayList<>();
 
             for (String folder : MEDIA_FOLDER) {
 
                 List<String> files = walkMediaFiles(folder);
+                numberOfFiles = numberOfFiles + files.size();
                 List<String> filesToScan = new ArrayList<>();
 
+                clearScreen();
                 for (String s : files) {
 
+                    System.out.println("Checking for change to file: " + s);
                     if (persistedData.containsKey(s)) {
                         if (!persistedData.get(s).isHevc() || (persistedData.get(s).getFileSize() != Files.size(Paths.get(s)))) {
                             filesToScan.add(s);
@@ -72,6 +77,7 @@ public class Main {
                     }
                 }
 
+                clearScreen();
                 List<VideoFile> vidFiles = scanVideoFiles(filesToScan, folder, OUTPUT_FOLDER, FILE_TYPES, unknownFilesTypes);
 
                 for (VideoFile vf: vidFiles) {
@@ -82,18 +88,26 @@ public class Main {
 
                 encode(vidFiles, hbPath, PRESETS_FILE, PRESET_NAME);
 
-                Set<String> keys = persistedData.keySet();
-                for (String s : keys) {
-                    if (!Files.exists(Paths.get(s))) {
-                        persistedData.remove(s);
-                    }
-
-                }
-
                 saveDataFile(dataFile, persistedData);
 
-
             }
+            clearScreen();
+
+            if (numberOfFiles != persistedData.size()) {
+                Set<String> keys = persistedData.keySet();
+                List<String> toRemove = new ArrayList<>();
+                for (String s : keys) {
+                    System.out.println("Cleaning up: " + s);
+                    if (!Files.exists(Paths.get(s))) {
+                        toRemove.add(s);
+                    }
+                }
+                for (String s : toRemove) {
+                    persistedData.remove(s);
+                }
+                saveDataFile(dataFile, persistedData);
+            }
+
             if (SCAN_INTERVAL_TIME_MIN == 0) break;
             clearScreen();
             if (unknownFilesTypes.size() > 0) {
